@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Pomodoro Focus</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--accent:#ef5350;--bg:#14161b;--card:#1d2027;--text:#f2f3f5;--muted:#8b909c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;display:flex;justify-content:center;padding:24px 16px}
+.app{width:100%;max-width:460px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.brand{font-weight:700;font-size:18px;display:flex;align-items:center;gap:8px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--accent);transition:background .3s}
+.icon-btn{background:var(--card);color:var(--text);border:1px solid #2b2f38;border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer}
+.card{background:var(--card);border-radius:20px;padding:24px 20px 28px;text-align:center;border:1px solid #2b2f38}
+.seg{display:flex;background:var(--bg);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:transparent;color:var(--muted);padding:10px 6px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s}
+.seg button.active{background:var(--accent);color:#fff}
+.ring{position:relative;width:260px;height:260px;margin:28px auto 22px;max-width:80vw;max-height:80vw}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:10}
+.ring .track{stroke:#2b2f38}
+.ring .bar{stroke:var(--accent);stroke-linecap:round;transition:stroke .3s}
+.time{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.time b{font-size:clamp(44px,16vw,64px);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.time small{color:var(--muted);font-size:13px;margin-top:2px}
+.controls{display:flex;gap:10px;justify-content:center}
+.start{background:var(--accent);color:#fff;border:0;border-radius:14px;padding:14px 38px;font-size:17px;font-weight:700;cursor:pointer;min-width:150px;transition:background .3s}
+.reset{background:transparent;color:var(--muted);border:1px solid #2b2f38;border-radius:14px;padding:14px 18px;font-size:15px;cursor:pointer}
+.video{margin-top:20px;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:16/9}
+.video iframe{width:100%;height:100%;border:0;display:block}
+.alt{display:block;margin-top:10px;color:var(--muted);font-size:13px;text-align:center;text-decoration:none}
+.alt:hover{color:var(--text)}
+.sessions{margin-top:14px;color:var(--muted);font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:5}
+.modal.open{display:flex}
+.box{background:var(--card);border:1px solid #2b2f38;border-radius:16px;padding:22px;width:340px;max-width:100%}
+.box h2{margin:0 0 14px;font-size:18px}
+.box label{display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px}
+.box input{width:84px;padding:8px;border-radius:8px;border:1px solid #2b2f38;background:var(--bg);color:var(--text);font-size:14px}
+.box .save{margin-top:14px;width:100%;background:var(--accent);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand"><span class="dot"></span>Pomodoro Focus</div>
+    <button class="icon-btn" id="cfg">⚙ Configurações</button>
+  </div>
+
+  <div class="card">
+    <div class="seg">
+      <button data-m="pomodoro" class="active">Pomodoro</button>
+      <button data-m="short">Pausa curta</button>
+      <button data-m="long">Pausa longa</button>
+    </div>
+
+    <div class="ring">
+      <svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="45"/><circle class="bar" id="bar" cx="50" cy="50" r="45"/></svg>
+      <div class="time"><b id="time">25:00</b><small id="label">Hora de focar</small></div>
+    </div>
+
+    <div class="controls">
+      <button class="start" id="start">Iniciar</button>
+      <button class="reset" id="reset" title="Reiniciar">↺</button>
+    </div>
+    <div class="sessions" id="sessions">Pomodoros concluídos: 0</div>
+
+    <div class="video">
+      <iframe id="yt" title="YouTube" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <a class="alt" href="https://www.youtube.com/watch?v=rFZHOHl-L8A" target="_blank" rel="noopener">Vídeo não carregou? Abrir no YouTube</a>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <h2>Configurações</h2>
+    <label>Pomodoro (min)<input type="number" id="c_pomodoro" min="1" max="180"></label>
+    <label>Pausa curta (min)<input type="number" id="c_short" min="1" max="60"></label>
+    <label>Pausa longa (min)<input type="number" id="c_long" min="1" max="120"></label>
+    <button class="save" id="save">Salvar</button>
+  </div>
+</div>
+
+<script>
+var VIDEO_ID = "rFZHOHl-L8A";
+var colors = {pomodoro:"#ef5350", short:"#26a69a", long:"#42a5f5"};
+var labels = {pomodoro:"Hora de focar", short:"Respire um pouco", long:"Descanse bem"};
+var mins = {pomodoro:25, short:5, long:15};
+var mode = "pomodoro", running = false, total = 25*60, remaining = total, endAt = 0, timer = null, count = 0;
+var C = 2*Math.PI*45;
+
+var $time = document.getElementById("time"), $start = document.getElementById("start"),
+    $yt = document.getElementById("yt"), $bar = document.getElementById("bar");
+$bar.style.strokeDasharray = C;
+
+/* YouTube controlado por postMessage (sem script externo) */
+$yt.src = "https://www.youtube.com/embed/" + VIDEO_ID + "?enablejsapi=1&rel=0&playsinline=1";
+$yt.addEventListener("load", function(){
+  $yt.contentWindow.postMessage(JSON.stringify({event:"listening", id:1}), "*");
+});
+function ytCmd(fn){
+  try{ $yt.contentWindow.postMessage(JSON.stringify({event:"command", func:fn, args:[]}), "*"); }catch(e){}
+}
+
+function fmt(s){ return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"); }
+function render(){
+  $time.textContent = fmt(remaining);
+  document.title = fmt(remaining) + " · Pomodoro Focus";
+  $start.textContent = running ? "Pausar" : "Iniciar";
+  $bar.style.strokeDashoffset = C * (1 - remaining/total);
+  document.getElementById("sessions").textContent = "Pomodoros concluídos: " + count;
+}
+function tick(){
+  remaining = Math.max(0, Math.round((endAt - Date.now())/1000));
+  render();
+  if(remaining <= 0) finish();
+}
+function start(){
+  if(running) return;
+  running = true;
+  endAt = Date.now() + remaining*1000;
+  timer = setInterval(tick, 250);
+  if(mode === "pomodoro") ytCmd("playVideo"); else ytCmd("pauseVideo");
+  render();
+}
+function pause(){
+  running = false;
+  clearInterval(timer);
+  ytCmd("pauseVideo");
+  render();
+}
+function setMode(m){
+  pause();
+  mode = m;
+  total = remaining = mins[m]*60;
+  document.documentElement.style.setProperty("--accent", colors[m]);
+  document.getElementById("label").textContent = labels[m];
+  document.querySelectorAll(".seg button").forEach(function(b){ b.classList.toggle("active", b.dataset.m === m); });
+  render();
+}
+function finish(){
+  clearInterval(timer); running = false;
+  try{
+    var ac = new (window.AudioContext||window.webkitAudioContext)(), o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination); g.gain.value = .2; o.frequency.value = 880; o.start(); o.stop(ac.currentTime+.4);
+  }catch(e){}
+  if(mode === "pomodoro"){ count++; setMode(count % 4 === 0 ? "long" : "short"); }
+  else setMode("pomodoro");
+}
+
+$start.addEventListener("click", function(){ running ? pause() : start(); });
+document.getElementById("reset").addEventListener("click", function(){ setMode(mode); });
+document.querySelectorAll(".seg button").forEach(function(b){
+  b.addEventListener("click", function(){ setMode(b.dataset.m); });
+});
+
+var $modal = document.getElementById("modal");
+document.getElementById("cfg").onclick = function(){
+  ["pomodoro","short","long"].forEach(function(k){ document.getElementById("c_"+k).value = mins[k]; });
+  $modal.classList.add("open");
+};
+document.getElementById("save").onclick = function(){
+  ["pomodoro","short","long"].forEach(function(k){
+    var v = parseInt(document.getElementById("c_"+k).value, 10);
+    if(v > 0) mins[k] = v;
+  });
+  $modal.classList.remove("open");
+  setMode(mode);
+};
+$modal.addEventListener("click", function(e){ if(e.target === $modal) $modal.classList.remove("open"); });
+
+setMode("pomodoro");
+</script>
+</body>
+</html>
