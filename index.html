@@ -151,6 +151,7 @@ function finish(){
   }catch(e){}
   if(mode === "pomodoro"){ count++; setMode(count % 4 === 0 ? "long" : "short"); }
   else setMode("pomodoro");
+  start();
 }
 
 $start.addEventListener("click", function(){ running ? pause() : start(); });
